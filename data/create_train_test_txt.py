@@ -10,8 +10,12 @@ def find_all_jpg_and_create_txt(test_set, dir):
 	print(len(img_paths))
 	str = '\n'.join(img_paths)
 
-	with open(test_set + '.txt', 'w') as f:
-		f.write(str)
+	new_str = ''
+	for line in str.split('\n'):
+		new_str += '/dl_data/m-taketani/practice/face_detection/data/' + line + '\n'
+
+	with open('/dl_data/m-taketani/practice/face_detection/data/' + test_set + '.txt', 'w') as f:
+		f.write(new_str)
 
 	pass
 
