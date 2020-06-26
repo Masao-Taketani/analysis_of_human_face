@@ -2,7 +2,7 @@
 A model that detects human faces and predicts age, gender and race.
 Will be implemented by TensorFlow 2.<br>
 <br>
-tmp image
+tmp image<br>
 <img src="imgs/tmp_result.png" width="500"/>
 
 ## Dataset
