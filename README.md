@@ -1,12 +1,16 @@
 # Human Face Analyzer
-This is a model which detect human faces and predict their age, gender and race.
-Will be implemented by TensorFlow 2.
+A model that detects human faces and predicts age, gender and race.
+Will be implemented by TensorFlow 2.<br>
+<br>
+tmp image
+<img src="imgs/tmp_result.png" width="500"/>
 
 ## Dataset
-- for face detection
+- for face detection<br>
   [WIDER FACE: A Face Detection Benchmark](http://shuoyang1213.me/WIDERFACE/)
-- for age, gender and race predictions
+- for age, gender and race predictions<br>
   [UTKFace](https://susanqq.github.io/UTKFace/)
+  
 ## References
 - Paper
   - [Xception: Deep Learning with Depthwise Separable Convolutions](https://arxiv.org/abs/1610.02357)<br>
