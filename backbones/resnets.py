@@ -203,8 +203,8 @@ class ResnetBuilder(object):
 
         last_f_map_shape = K.int_shape(last_f_maps)
         avgpool = AveragePooling2D(pool_size=(last_f_map_shape[1],
-                                               last_f_map_shape[2])
-                                    strides=(1, 1))(last_f_map_shape)
+                                              last_f_map_shape[2])
+                                   strides=(1, 1))(last_f_map_shape)
         flatten = Flatten()(avgpool)
         # classifier block
         dense = Dense(units=num_outputs,
