@@ -5,10 +5,10 @@ import random
 from tqdm import tqdm
 
 
-TRAIN_GT_FILE = "wider_face_split/wider_face_train_bbx_gt.txt"
-VAL_GT_FILE = "wider_face_split/wider_face_val_bbx_gt.txt"
-TRAIN_IMG_DIR = "WIDER_train/images/"
-VAL_IMG_DIR = "WIDER_val/images/"
+TRAIN_GT_FILE = "datasets/WIDER/wider_face_split/wider_face_train_bbx_gt.txt"
+VAL_GT_FILE = "datasets/WIDER/wider_face_split/wider_face_val_bbx_gt.txt"
+TRAIN_IMG_DIR = "datasets/WIDER/train/imgs/"
+VAL_IMG_DIR = "datasets/WIDER/val/imgs/"
 
 
 def preprocess(gt_file, img_dir):
