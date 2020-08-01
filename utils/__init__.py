@@ -4,6 +4,7 @@ import numpy as np
 from glob import glob
 import os
 import cv2
+from PIL import Image
 
 
 def plot_train_val_history(history):
@@ -109,28 +110,34 @@ def preprocess_wider_face(gt_file, img_dir):
     print("preprocessing {} data is done.".format(gt_file.split("_")[-3]))
 
 
-def preprocess_utkface(img_dir):
+def preprocess_utkface(img_dir, img_size):
     # annotation format: [age]_[gender]_[race]_[date&time].jpg
+    np_imgs = []
     ages = []
     genders = []
     races = []
 
     imgs_list = glob(os.path.join(img_dir, "*.jpg"))
     for img in imgs_list:
+        pil_img = Image.open(img)
+        resized_pil_img = pil_img.resize((img_size, img_size))
+        np_img = np.asarray(resized_pil_img)
         name_split = img.split("_")
         if not len(name_split) == 4:
             raise ValueError("annotation format is not correct for {}"
                              .format(os.basename(img)))
         age, gender, race, _ = name_split
+        np_imgs.append(np_img)
         ages.append(age)
         genders.append(gender)
         races.append(race)
 
+    np_imgs = np.array(np_imgs)
     ages = np.array(ages)
     genders = np.array(genders)
     races = np.array(races)
 
-    return ages, genders, races
+    return np_imgs, ages, genders, races
 
 
 def normalize_inputs(X_train, X_test):
