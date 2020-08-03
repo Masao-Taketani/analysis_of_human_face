@@ -13,15 +13,15 @@ GlobalMaxPooling2D
 from tensorflow.utils import get_file
 
 
-WEIGHTS_PATH = ""
+WEIGHTS_PATH = "https://github.com/fchollet/deep-learning-models/releases/download/v0.4/xception_weights_tf_dim_ordering_tf_kernels_notop.h5"
+# "https://storage.googleapis.com/tensorflow/keras-applications/xception/xception_weights_tf_dim_ordering_tf_kernels_notop.h5"
 
+def Xception_notop(img_size):
 
-def Xception():
-
-    IMG_SIZE = 299
-    CLASS_NUM = 1000
-    NUM_CHANNEL = 3
-    input_shape = (IMG_SIZE, IMG_SIZE, NUM_CHANNEL)
+    # IMG_SIZE = 299
+    # CLASS_NUM = 1000
+    # NUM_CHANNEL = 3
+    input_shape = (img_size, img_size, 3)
 
     inputs = InputLayer(shape=input_shape)
 
@@ -130,9 +130,9 @@ def Xception():
     x = SeparableConv2D(2048, (3, 3), padding="same", use_bias=False)(x)
     x = BatchNormalization()(x)
     x = Activation("relu")(x)
-    x = GlobalAveragePooling2D()(x)
+    #x = GlobalAveragePooling2D()(x)
     # The feature map size after the Global AVG pooling is 2048
-    x = Dense(CLASS_NUM, activation="softmax")(x)
+    #x = Dense(CLASS_NUM, activation="softmax")(x)
 
     model = Model(inputs, x, name="xception")
 
@@ -141,5 +141,31 @@ def Xception():
                             cache_subdir="models")
 
     model.load_weights(weights_path)
+
+    return model
+
+
+def Xception(img_size, num_classes):
+    xception_notop = Xception_notop(img_size)
+    x = xception_notop.output
+    x = GlobalAveragePooling2D()(x)
+    x = Dense(1024, activation = 'relu')(x)
+    prediction = Dense(num_classes, activation = 'softmax')(x)
+
+    model = Model(inputs=xception_notop.input, outputs=prediction)
+
+    # freeze up to 107 layers
+    for layer in model.layers[:108]:
+        layer.trainable = False
+
+        # to train batch normalization
+        if layer.name.startswith('batch_normalization'):
+            layer.trainable = True
+        if layer.name.endswith('bn'):
+            layer.trainable = True
+
+    # train after 108 layers
+    for layer in model.layers[108:]:
+        layer.trainable = True
 
     return model
