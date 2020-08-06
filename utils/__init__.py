@@ -150,6 +150,7 @@ def normalize_inputs(X_train, X_test):
 def normalize_age_labels(y_train, y_test):
     y_train = y_train.astype(np.float32)
     y_test = y_test.astype(np.float32)
+    # np.amax returns the max element from the given array
     max_age = np.amax(y_train)
     y_train = y_train / max_age
     y_test = y_test / max_age
