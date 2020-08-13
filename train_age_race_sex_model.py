@@ -3,6 +3,9 @@ import utils
 from backbones.xception import Xception
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping,\
 TensorBoard, ReduceLROnPlateau
+from tensorflow.keras.losses import SparseCategoricalCrossentropy
+from tensorflow.keras.optimizer import Adam
+from tensorflow.keras.metrics import Mean, SparseCategoricalAccuracy
 
 
 IMG_DIR = "datasets/UTKFace/"
@@ -59,3 +62,30 @@ if __name__ == "__main__":
     model = Xception.build(IMG_SIZE)
     freeze_layers(model, 108)
     callbacks_list = create_callbacks(WEIGHT_DIR, LOG_DIR, "val_loss", 1)
+
+    loss_fn = SparseCategoricalCrossentropy()
+    optimizer = Adam()
+
+    train_loss = Mean(name="train_loss")
+    train_acc = SparseCategoricalAccuracy(name="train_acc")
+    val_loss = Mean(name="val_loss")
+    val_acc = SparseCategoricalAccuracy(name="val_acc")
+
+    @tf.function
+    def train_step(features, labels):
+        with tf.GradientTape() as tape:
+            preds = model(features, training=True)
+            loss = loss_fn(labels, preds)
+        grads = tape.gradient(loss, model.trainable_variables)
+        optimizer.apply_gradients(zip(grads, model.trainable_variables))
+
+        train_loss(loss)
+        train_acc(labels, preds)
+
+    @tf.function
+    def val_step(features, labels):
+        preds = model(features)
+        loss = loss_fn(labels, preds)
+
+        val_loss(loss)
+        val_acc(labels, preds)
