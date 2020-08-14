@@ -1,6 +1,7 @@
 import os
 import utils
 from backbones.xception import Xception
+import tensorflow as tf
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping,\
 TensorBoard, ReduceLROnPlateau
 from tensorflow.keras.losses import SparseCategoricalCrossentropy
@@ -56,9 +57,17 @@ def freeze_layers(model, num_layers_to_freeze):
 
 
 if __name__ == "__main__":
-    np_imgs, ages, genders, races = utils.preprocess_utkface(IMG_DIR, IMG_SIZE)
-    X_train, X_test, y_train, y_test = utils.train_test_split(np_imgs, )
-    X_train, X_test = utils.normalize_inputs(X_train, X_test)
+    np_imgs, labels = utils.get_utkface_np_data(IMG_DIR, IMG_SIZE)
+    X_train, X_test, y_train, y_test = utils.train_test_split(np_imgs, labels)
+    num_X_train = len(X_train)
+    train_ds = tf.data.Dataset.from_tensor_slices((X_train, y_train))
+    train_ds = train_ds.shuffle(num_X_train)
+    train_ds = train_ds.repeat()
+    train_ds = train_ds.map(
+                    lambda img, label: (utils.process_utkface(img), label)
+    train_ds = train_ds.prefetch(buffer_size=AUTOTUNE)
+
+
     model = Xception.build(IMG_SIZE)
     freeze_layers(model, 108)
     callbacks_list = create_callbacks(WEIGHT_DIR, LOG_DIR, "val_loss", 1)

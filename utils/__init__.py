@@ -5,6 +5,8 @@ from glob import glob
 import os
 import cv2
 from PIL import Image
+import tensorflow as tf
+import tensorflow_addons as tfa
 
 
 def plot_train_val_history(history):
@@ -110,12 +112,10 @@ def preprocess_wider_face(gt_file, img_dir):
     print("preprocessing {} data is done.".format(gt_file.split("_")[-3]))
 
 
-def preprocess_utkface(img_dir, img_size):
+def get_utkface_np_data(img_dir, img_size):
     # annotation format: [age]_[gender]_[race]_[date&time].jpg
     np_imgs = []
-    ages = []
-    genders = []
-    races = []
+    labels = []
 
     imgs_list = glob(os.path.join(img_dir, "*.jpg"))
     for img in imgs_list:
@@ -128,23 +128,37 @@ def preprocess_utkface(img_dir, img_size):
                              .format(os.basename(img)))
         age, gender, race, _ = name_split
         np_imgs.append(np_img)
-        ages.append(age)
-        genders.append(gender)
-        races.append(race)
+        labels.append((age, gender, race))
 
     np_imgs = np.array(np_imgs)
-    ages = np.array(ages)
-    genders = np.array(genders)
-    races = np.array(races)
+    labels = np.array(labels)
 
-    return np_imgs, ages, genders, races
+    return np_imgs, labels
 
 
-def normalize_inputs(X_train, X_test):
-    X_train = X_train.astype("float32") / 255.0
-    X_test = X_test.astype("float32") / 255.0
+def process_utkface(img):
+    img_shape = img.shape
+    pad_ratio = 0.7
+    pad_size = img_shape[1] * pad_ratio
 
-    return X_train, X_test
+    img = normalize_inputs(img)
+    img = tf.image.random.flip_left_right(img)
+    random_angle_to_rotate = tf.random.uniform(shape=(),
+                                                minval=-10 * np.pi / 180,
+                                                maxval=10 * np.pi / 180)
+    img = tfa.image.rotate(img, random_angle_to_rotate)
+    img = tf.pad(img, tf.constant([[pad_size, pad_size],
+                                   [pad_size, pad_size],
+                                   [0, 0]]), "REFLECT")
+    img = tf.image.random_crop(img, size=[img_shape[0],
+                                          img_shape[1],
+                                          img_shape[2]])
+
+
+def normalize_inputs(X):
+    normalized_X = X.astype("float32") / 255.0
+    tf.
+    return normalized_X
 
 
 def normalize_age_labels(y_train, y_test):
