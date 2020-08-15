@@ -42,7 +42,6 @@ def create_callbacks(weight_dir, log_dir, monitor, verbose):
 
     return [early_stopping, model_checkpoint, reduce_lr, logging]
 
-
 def freeze_layers(model, num_layers_to_freeze):
     for layer in model.layers[:num_layers_to_freeze]:
         layer.trainable = False
@@ -56,17 +55,36 @@ def freeze_layers(model, num_layers_to_freeze):
     return model
 
 
-if __name__ == "__main__":
+def main():
+    AUTOTUNE = tf.data.experimental.AUTOTUNE
+
     np_imgs, labels = utils.get_utkface_np_data(IMG_DIR, IMG_SIZE)
     X_train, X_test, y_train, y_test = utils.train_test_split(np_imgs, labels)
     num_X_train = len(X_train)
+
     train_ds = tf.data.Dataset.from_tensor_slices((X_train, y_train))
-    train_ds = train_ds.shuffle(num_X_train)
-    train_ds = train_ds.repeat()
+    # Applying normalization before `ds.cache()` to re-use it.
+    # Note: Random transformations (e.g. images augmentations) should be applied
+    # after both `ds.cache()` (to avoid caching randomness) and `ds.batch()` (for
+    # vectorization [1]).
     train_ds = train_ds.map(
-                    lambda img, label: (utils.process_utkface(img), label)
+                    lambda img, label: (utils.normalize_inputs(img), label),
+                    num_parallel_calls=AUTOTUNE)
+    train_ds = train_ds.cache()
+    train_ds = train_ds.shuffle(buffer_size=num_X_train)
+    #train_ds = train_ds.repeat()
+    # Batch after shuffling to get unique batches at each epoch.
+    train_ds = train_ds.batch(BATCH_SIZE)
+    train_ds = train_ds.map(
+                    lambda img, label: (utils.process_utkface(img), label),
+                    num_parallel_calls=AUTOTUNE)
     train_ds = train_ds.prefetch(buffer_size=AUTOTUNE)
 
+    val_ds = tf.data.Dataset.from_tensor_slices((X_test, y_test))
+    val_ds = val_ds.map(
+                    lambda img, label: (utils.normalize_inputs(img), label),
+                    num_parallel_calls=AUTOTUNE)
+    val_ds = tf.data.Dataset.batch(BATCH_SIZE)
 
     model = Xception.build(IMG_SIZE)
     freeze_layers(model, 108)
@@ -98,3 +116,28 @@ if __name__ == "__main__":
 
         val_loss(loss)
         val_acc(labels, preds)
+
+    # train and validation loop
+    for epoch in range(EPOCHS):
+        # reset all of the metrics at the start of each epoch
+        train_loss.reset_states()
+        train_acc.reset_states()
+        val_loss.reset_states()
+        val_acc.reset_states()
+
+        for imgs, labels in train_ds:
+            train_step(imgs, labels)
+
+        for val_imgs, val_labels in val_ds:
+            val_step(val_imgs, val_labels)
+
+        train_log = "EPOCH {}, Loss: {}, Acc: {}, Val Loss: {}, Val Acc: {}"
+        print(train_log.format(epoch + 1,
+                               train_loss.result(),
+                               train_acc.result() * 100,
+                               val_loss.result(),
+                               val_acc.result() * 100)
+
+
+if __name__ == "__main__":
+    main()

@@ -141,7 +141,6 @@ def process_utkface(img):
     pad_ratio = 0.7
     pad_size = img_shape[1] * pad_ratio
 
-    img = normalize_inputs(img)
     img = tf.image.random.flip_left_right(img)
     random_angle_to_rotate = tf.random.uniform(shape=(),
                                                 minval=-10 * np.pi / 180,
@@ -157,7 +156,6 @@ def process_utkface(img):
 
 def normalize_inputs(X):
     normalized_X = X.astype("float32") / 255.0
-    tf.
     return normalized_X
 
 
