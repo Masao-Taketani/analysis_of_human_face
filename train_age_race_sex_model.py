@@ -4,9 +4,22 @@ from backbones.xception import Xception
 import tensorflow as tf
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping,\
 TensorBoard, ReduceLROnPlateau
-from tensorflow.keras.losses import SparseCategoricalCrossentropy
+from tensorflow.keras.losses import CategoricalCrossentropy, \
+MeanAbsolutePercentageError
 from tensorflow.keras.optimizer import Adam
 from tensorflow.keras.metrics import Mean, SparseCategoricalAccuracy
+
+flags = tf.compat.v1.flags
+
+FLAGS = flags.FLAGS
+
+flags.DEFINE_bool("use_xla",
+                  False,
+                  "Whether to train with XLA.")
+
+flgas.DEFINE_bool("use_mp",
+                  False,
+                  "Wether to train with mixed precision.")
 
 
 IMG_DIR = "datasets/UTKFace/"
@@ -42,6 +55,7 @@ def create_callbacks(weight_dir, log_dir, monitor, verbose):
 
     return [early_stopping, model_checkpoint, reduce_lr, logging]
 
+
 def freeze_layers(model, num_layers_to_freeze):
     for layer in model.layers[:num_layers_to_freeze]:
         layer.trainable = False
@@ -55,7 +69,11 @@ def freeze_layers(model, num_layers_to_freeze):
     return model
 
 
-def main():
+def main(_):
+    if FLAGS.use_xla:
+        tf.config.optiimzer.set_jit(True)
+    if FLAGS.use_mp:
+
     AUTOTUNE = tf.data.experimental.AUTOTUNE
 
     np_imgs, labels = utils.get_utkface_np_data(IMG_DIR, IMG_SIZE)
@@ -68,8 +86,10 @@ def main():
     # after both `ds.cache()` (to avoid caching randomness) and `ds.batch()` (for
     # vectorization [1]).
     train_ds = train_ds.map(
-                    lambda img, label: (utils.normalize_inputs(img), label),
+                    lambda img, label: (utils.normalize_inputs(img),
+                                        categorize_gendar_and_race(label),
                     num_parallel_calls=AUTOTUNE)
+    train_ds = train_ds.map()
     train_ds = train_ds.cache()
     train_ds = train_ds.shuffle(buffer_size=num_X_train)
     #train_ds = train_ds.repeat()
@@ -82,7 +102,8 @@ def main():
 
     val_ds = tf.data.Dataset.from_tensor_slices((X_test, y_test))
     val_ds = val_ds.map(
-                    lambda img, label: (utils.normalize_inputs(img), label),
+                    lambda img, label: (utils.normalize_inputs(img),
+                                        categorize_gendar_and_race(label),
                     num_parallel_calls=AUTOTUNE)
     val_ds = tf.data.Dataset.batch(BATCH_SIZE)
 
@@ -94,9 +115,9 @@ def main():
     optimizer = Adam()
 
     train_loss = Mean(name="train_loss")
-    train_acc = SparseCategoricalAccuracy(name="train_acc")
+    train_acc = CategoricalAccuracy(name="train_acc")
     val_loss = Mean(name="val_loss")
-    val_acc = SparseCategoricalAccuracy(name="val_acc")
+    val_acc = CategoricalAccuracy(name="val_acc")
 
     @tf.function
     def train_step(features, labels):
@@ -140,4 +161,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    tf.conpat.v1.app.run()

@@ -7,6 +7,7 @@ import cv2
 from PIL import Image
 import tensorflow as tf
 import tensorflow_addons as tfa
+from tensorflow.keras.utils import to_categorical
 
 
 def plot_train_val_history(history):
@@ -158,16 +159,20 @@ def normalize_inputs(X):
     normalized_X = X.astype("float32") / 255.0
     return normalized_X
 
+def categorize_gendar_and_race(label):
+    age, gender, race = label
+    gender = to_categorical(gender, 2)
+    race = to_categorical(race, 5)
+    return age, gender, race
 
-def normalize_age_labels(y_train, y_test):
-    y_train = y_train.astype(np.float32)
-    y_test = y_test.astype(np.float32)
-    # np.amax returns the max element from the given array
-    max_age = np.amax(y_train)
-    y_train = y_train / max_age
-    y_test = y_test / max_age
+def normalize_age(label):
+    age, gender, race = label
+    age = tf.cast(age, tf.float32)
+    # tf.reduce_max returns the max element from the given array
+    max_age = tf.reduce_max(age)
+    age = age / max_age
 
-    return y_train, y_test, max_age
+    return
 
 
 def denomalize_age_labels(normalized_preds, normalized_labels, max_age):
