@@ -165,14 +165,14 @@ def categorize_gendar_and_race(label):
     race = to_categorical(race, 5)
     return age, gender, race
 
-def normalize_age(label):
-    age, gender, race = label
-    age = tf.cast(age, tf.float32)
-    # tf.reduce_max returns the max element from the given array
-    max_age = tf.reduce_max(age)
-    age = age / max_age
-
-    return
+def normalize_age_labels(labels):
+    ages, genders, races = labels
+    ages = tf.cast(ages, tf.float32)
+    # np.amax returns the max element from the given array
+    max_age = np.amax(ages)
+    ages = ages / max_age
+    labels = (ages, genders, races)
+    return labels, max_age
 
 
 def denomalize_age_labels(normalized_preds, normalized_labels, max_age):
